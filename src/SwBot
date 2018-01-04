@@ -1,0 +1,454 @@
+^!s:: ;Ctrl + esc to exit Start on "start battle" screen
+
+;replay nb10 == 0x180603
+;replay gb10 == 0x150705
+;replay db10 == 0x1E0500
+
+CoordMode, Pixel, Window
+CoordMode, Mouse, Window
+SetTitleMatchMode, 2
+
+cClick(x, y){
+	MouseMove, x, y
+	Sleep, 25
+	Click, x, y
+}
+
+
+;replay popup: refill yes x/y ( 288, 258 //383, 290), next popup, Energy (left) x/y: (161, 170 // 301, 297) // Confirm: (291, 267 // 387, 294), Ok: (367,261 // 453, 294) -> Close (366, 381 // 447, 406)
+checkRefill(time){
+	getFocus()
+	ToolTip, Checking Refill,300,419
+	PixelSearch,,,499,189,500,190,0x472E20,2,fast,RGB; Check To see if refill screen is up, wait 3s, search again.
+		if ErrorLevel
+			return 0
+		else{
+			Sleep, 2500
+			PixelSearch,,,499,189,500,190,0x472E20,2,fast,RGB; Second Scan
+				if !ErrorLevel ; Found The Box
+					;Click Yes
+					clickRandomX:= randomPos(243,322)
+					clickRandomY:= randomPos(220,247)
+					ToolTip, Click Yes `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+					cClick(clickRandomX, clickRandomY)
+					FileAppend, --Refill Click Yes -- , C:\Users\Damien\Documents\RunLog.txt
+					randomDelay(2, 4)
+
+
+					;Click Energy
+					clickRandomX:= randomPos(139,251)
+					clickRandomY:= randomPos(147,250)
+					ToolTip, Click Energy `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+					cClick(clickRandomX, clickRandomY)
+					FileAppend, --Refill Click Energy Box -- , C:\Users\Damien\Documents\RunLog.txt
+					randomDelay(2, 4)
+
+
+					;Click Yes to Confirm spending 30 crystals
+					clickRandomX:= randomPos(240,327)
+					clickRandomY:= randomPos(224,247)
+					ToolTip, Click Yes `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+					cClick(clickRandomX, clickRandomY)
+					FileAppend, --Refill Click yes to confirm box -- , C:\Users\Damien\Documents\RunLog.txt
+					randomDelay(2, 4)
+
+
+					;Click Ok to Dismiss Window
+					clickRandomX:= randomPos(302,378)
+					clickRandomY:= randomPos(220,247)
+					ToolTip, Click OK `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+					cClick(clickRandomX, clickRandomY)
+					FileAppend, --Refill click ok to dismiss confirm box -- , C:\Users\Damien\Documents\RunLog.txt
+					randomDelay(2, 4)
+
+
+					;Click Close to Dismiss Popup
+					clickRandomX:= randomPos(307,376)
+					clickRandomY:= randomPos(321,342)
+					ToolTip, Click Close `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+					cClick(clickRandomX, clickRandomY)
+					FileAppend, --Refill close refill window -- , C:\Users\Damien\Documents\RunLog.txt
+					randomDelay(2, 4)
+					getFocus()
+					return 1 ; Shows that you refilled
+		}
+}
+
+determineVictoryOrDeath(){
+	getFocus()
+	PixelSearch,,,239,41,448,80,0xfbfb39,2,fast,RGB;Victory letters yellow
+	if ErrorLevel{
+		getFocus()
+		PixelSearch,,,202,248,215,264,0xde2251,3,fast,RGB ;Search for red crystal in revive box
+			if !ErrorLevel{
+				Sleep, 3127
+				PixelSearch,,,202,248,215,264,0xde2251,3,fast,RGB ;Search for red crystal in revive box
+					if !ErrorLevel{
+						FileAppend, --Defeat -- , C:\Users\Damien\Documents\RunLog.txt
+						return 0
+					}
+			}
+			else
+				;Error
+				return -1
+	}
+	else{
+		;victory
+		Sleep, 1500
+		getFocus()
+		PixelSearch,,,239,41,448,80,0xf9fd34,2,fast,RGB;Victory letters yellow
+			if !ErrorLevel{
+				;victory
+				FileAppend, --Victory -- , C:\Users\Damien\Documents\RunLog.txt
+				return 1
+			}
+			else
+				return -1
+	}
+
+}
+
+
+;Init function
+getFocus(){
+	IfWinExist, Mobizen Mirroring
+		WinMove, 0,0
+	IfWinExist, ViewerWnd
+		WinActivate
+	WinMove,ViewerWnd,,80,21,684,387,,,
+}
+
+
+getItem(){
+	getFocus()
+	Sleep, 200
+	PixelSearch,x,y,300,263,383,362,0xb27937,2,fast,RGB ;Search For "Ok" Box in the middle of where sell / get appear on runes
+	if !ErrorLevel{
+		FileAppend, --Found an item -- , C:\Users\Damien\Documents\RunLog.txt
+		cClick(x, y)
+	}
+	else{
+		;click somewhere random in hopes that the treasure chest is still on the screen
+		FileAppend, --I think treasure chest is stuck clicking again to try to find item (logs say we got one) -- , C:\Users\Damien\Documents\RunLog.txt
+		clickRandomX:= randomPos(513,668)
+		clickRandomY:= randomPos(113,161)
+		cClick(clickRandomX, clickRandomY)
+		Sleep, 2500
+		getItem()
+	}
+	Sleep, 200
+}
+
+getRune(){
+	;get button color x/y 431x307 0xC89856
+	;get button coords x358 - x440, y297 - y330
+	getButtonx1 := 358
+	getButtonx2 := 440
+	getButtony1 := 297
+	getButtony2 := 330
+	getButtonColorx := 431
+	getButtonColory := 307
+	getButtonColor := 0xC89856
+
+
+	Sleep, 20
+	randomDelay(1,2)
+	Send, {F8}
+	randomDelay(2,3)
+	getFocus()
+
+	PixelSearch,x,y,getButtonColorx-3,getButtonColory-3,getButtonColorx+3,getButtonColory+3,getButtonColor,2,fast,RGB ;Search For "Ok" Box in the middle of where sell / get appear on runes
+	if !ErrorLevel{
+		FileAppend, --Found a rune that we're going to get -- , C:\Users\Damien\Documents\RunLog.txt
+		clickRandomX:= randomPos(getButtonx1,getButtonx2)
+		clickRandomY:= randomPos(getButtony1,getButtony2)
+		cClick(clickRandomX, clickRandomY)
+	}
+	else{
+		;click somewhere random in hopes that the treasure chest is still on the screen
+		FileAppend, --Trying to get a rune but we can't find it -- , C:\Users\Damien\Documents\RunLog.txt
+		clickRandomX:= randomPos(513,668)
+		clickRandomY:= randomPos(113,161)
+		cClick(clickRandomX, clickRandomY)
+		Sleep, 2500
+		getRune()
+	}
+}
+
+handleDeath(){
+	;Click no on box
+	clickRandomX:= randomPos(381,498)
+	clickRandomY:= randomPos(240,266)
+	cClick(clickRandomX, clickRandomY)
+	FileAppend, --Handle Death -- , C:\Users\Damien\Documents\RunLog.txt
+	ToolTip, Dead `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+	randomDelay(3, 4)
+	clickRandomX:= randomPos(137,600)
+	clickRandomY:= randomPos(112,340)
+	cClick(clickRandomX, clickRandomY)
+}
+
+;Generate a random delay between x / y seconds (millisecond multiplier will be done in return)
+randomDelay(x, y){ ;All values are in MS (1000 = 1)
+	Random delay, x, y
+	delay := delay*1000
+	Sleep, %delay%
+}
+
+;Generate a random number between x and y
+randomPos(num1, num2){
+	Random clickPosition, num1, num2
+	return clickPosition
+}
+
+replay(time, type){
+
+	;Replay button color x/y 283x209  1A0805
+	;replay button coords x127 - x302, y196 - y224
+	replayButtonx1 := 127
+	replayButtonx2 := 302
+	replayButtony1 := 196
+	replayButtony2 := 224
+	replayButtonColorx := 283
+	replayButtonColory := 210
+	replayButtonColor := 0x1E0500
+
+
+	getFocus()
+	randomDelay(3,5)
+	PixelSearch,,,replayButtonColorx-3,replayButtonColory-3,replayButtonColorx+3,replayButtonColory+3,replayButtonColor,3,fast,RGB;
+	if !ErrorLevel{
+		clickRandomX := randomPos(replayButtonx1, replayButtonx2)
+		clickRandomY := randomPos(replayButtony1, replayButtony2)
+		cclick(clickRandomX, clickRandomY)
+		Sleep, 1000
+	}
+	else{
+		if (type == "Get"){
+			getRune()
+			randomDelay(2,3)
+			replay(time, type)
+		}
+		if (type == "Sell"){
+			sellRune()
+			randomDelay(2,3)
+			replay(time, type)
+		}
+		if (type == "Death"){
+			clickRandomX := randomPos(replayButtonx1, replayButtonx2)
+			clickRandomY := randomPos(replayButtony1, replayButtony2)
+			cclick(clickRandomX, clickRandomY)
+			Sleep, 1000
+		}
+		else{
+			getItem()
+			randomDelay(2,3)
+			replay(time, type)
+		}
+	}
+
+	refilled := checkRefill(time)
+	if(refilled == 1)
+		replay(time,type)
+	ToolTip, Replaying -- Last battle yielded- Color: %runeColor% - Level: %runeLevel% and took %time% seconds. ,300,419
+}
+
+sellRune(){
+	;sell button color x/y 313x302 0xCA9D59
+	;sell button coords x248 - x324, y299 - y328
+	sellButtonx1 := 248
+	sellButtonx2 := 324
+	sellButtony1 := 299
+	sellButtony2 := 328
+	sellButtonColorx := 313
+	sellButtonColory := 302
+	sellButtonColor := 0xCA9D59
+
+	;Sell confirm button color x/y 309x233 0xC99C46
+	;Sell confirm button x241 - x315, y222 - y245
+	sellConfirmButtonx1 := 241
+	sellConfirmButtonx2 := 315
+	sellConfirmButtony1 := 222
+	sellConfirmButtony2 := 245
+	sellConfirmButtonColorx := 309
+	sellConfirmButtonColory := 233
+	sellConfirmButtonColor := 0xC99C46
+
+
+	getFocus()
+	Sleep, 20
+	;click sell
+
+	PixelSearch,,,sellButtonColorx-3,sellButtonColory-3,sellButtonColorx+3,sellButtonColory+3,sellButtonColor,4,fast,RGB ;Start Battle button
+	if !ErrorLevel{
+		;Click the sell button
+		clickRandomX:= randomPos(sellButtonx1,sellButtonx2)
+		clickRandomY:= randomPos(sellButtony1,sellButtony1)
+		cClick(clickRandomX, clickRandomY)
+		FileAppend, --Click sell rune (rune found in log and found color at proper location) -- , C:\Users\Damien\Documents\RunLog.txt
+		randomDelay(2, 3)
+	}
+	else{
+		;click somewhere random in hopes that the treasure chest is still on the screen
+		FileAppend, --Sell rune: Can't find rune trying to click random again to show rune dialog -- , C:\Users\Damien\Documents\RunLog.txt
+		clickRandomX:= randomPos(513,668)
+		clickRandomY:= randomPos(113,161)
+		cClick(clickRandomX, clickRandomY)
+		Sleep, 2500
+		sellRune()
+	}
+
+	;click yes on confirmation
+	PixelSearch,,,sellConfirmButtonColorx-3,sellConfirmButtonColory-3,sellConfirmButtonColorx+3,sellConfirmButtonColory+3,sellConfirmButtonColor,5,fast,RGB ;Start Battle button
+	if !ErrorLevel{
+		clickRandomX:= randomPos(sellConfirmButtonx1,sellConfirmButtonx2)
+		ClickRandomY:= randomPos(sellConfirmButtony1,sellConfirmButtony2)
+		cClick(clickRandomX, clickRandomY)
+		FileAppend, --Sell rune: Click confirm then return to replay function -- , C:\Users\Damien\Documents\RunLog.txt
+	}
+	else{
+		;Click the sell button
+		clickRandomX:= randomPos(%sellButtonx1%,%sellButtonx2%)
+		clickRandomY:= randomPos(%sellButtony1%,%sellButtony1%)
+		cClick(clickRandomX, clickRandomY)
+		FileAppend, --Sell rune: Sell button is still showing clicking that again -- , C:\Users\Damien\Documents\RunLog.txt
+		randomDelay(2, 3)
+	}
+}
+
+startBattle(){
+
+	;StartBattle Button Color x/y 617x268 0xC9A149
+	;Start Button coords x521 - x633, y250 - y295
+	startBattlex1 := 521
+	startBattlex2 := 633
+	startBattley1 := 250
+	startBattley2 := 295
+	startBattleButtonColorx := 617
+	startBattleButtonColory := 268
+	startBattleButtonColor := 0xC9A149
+
+
+	getFocus()
+	Sleep, 10
+	;click start battle
+	clickRandomX:= randomPos(startBattlex1,startBattlex2)
+	clickRandomY:= randomPos(startBattley1,startBattley2)
+	PixelSearch,,,startBattleButtonColorx-3,startBattleButtonColory-3,startBattleButtonColorx+3,startBattleButtonColory+3,startBattleButtonColor,3,fast,RGB ;Start Battle button
+	if !ErrorLevel{
+		cClick(clickRandomX, clickRandomY)
+		FileAppend, --Starting battle -- , C:\Users\Damien\Documents\RunLog.txt
+		;ToolTip, StartBattle `,`X:%clickRandomX% / Y:%clickRandomY%,300,419
+	}
+	else{
+		randomDelay(3,5)
+		startBattle()
+		FileAppend, --Can't find button to start battle -- , C:\Users\Damien\Documents\RunLog.txt
+		;Debug
+		;ToolTip, StartBattle `,`Could not find anything for Color: %startBattleButtonColor% at X:%startBattlex1%-%startBattlex2%xY:%startBattley1%-%startBattley2%,300,419
+	}
+}
+
+;Wait until the end of a battle
+waitUntilEnd(){
+	done := -1
+	loop, 10000{
+		done := determineVictoryOrDeath()
+		if(done > -1)
+			break
+		Sleep, 1000
+	}
+	return done
+}
+
+WinResize(){
+	WinMove,ViewerWnd,,80,21,684,387,,,
+}
+	WinResize()
+	counter := 1
+	loop,{
+	FileAppend, %counter%`,, C:\Users\Damien\Documents\RunLog.txt
+	StartTime := A_TickCount
+	startBattle()
+	winLoss := waitUntilEnd()
+	randomDelay(2, 4)
+	if(winLoss){
+		type := ""
+		clickRandomX:= randomPos(513,668)
+		clickRandomY:= randomPos(113,161)
+		cClick(clickRandomX, clickRandomY)
+		Sleep, 2500
+		loop{ ;This is the most basic error handling on the planet.  Loop clicking until the treasure chest opens.
+			cClick(clickRandomX, clickRandomY)
+			Sleep, 2500
+			PixelSearch,,,351,220,355,232,0xfbfb0d,3,fast,RGB ;Search for Bright yellow on treasure chest to make sure it's gone.
+			if ErrorLevel
+				break
+			else
+				Sleep, 2000
+		}
+		Run, RuneCreeper-Fast.jar, C:\Users\Damien\Desktop\
+		Sleep, 2000
+		FileRead, outcome, C:\Users\Damien\Desktop\output.txt
+		Sleep, 900
+
+		if(outcome = "rune: Maybe" or outcome= "rune: Get"){
+			ToolTip, Get rune- %outcome% --,300,419
+			getRune()
+			Sleep, 3000
+			type := "Get"
+		}
+
+		if (outcome = "rune: sell"){
+			ToolTip, Sell rune- %outcome% --,300,419
+			sellRune()
+			Sleep, 3000
+			type := "Sell"
+		}
+
+		if(outcome = "Rainbowmon"){
+			ToolTip, Get Rainbowmon- %outcome% --,300,419
+			getItem()
+			Sleep, 3000
+			type := "Item"
+		}
+
+		if (outcome = "craft"){
+			ToolTip, Get Craft- %outcome% --,300,419
+			getItem()
+			Sleep, 3000
+			type := "Item"
+		}
+
+		if(outcome = "scroll"){
+			ToolTip, Get Scroll- %outcome% --,300,419
+			getItem()
+			Sleep, 3000
+			type := "Item"
+		}
+
+		if(outcome = "Unknown Item"){
+			ToolTip, Get Unknown item- %outcome% --,300,419
+			getItem()
+			Sleep, 3000
+			type := "Item"
+		}
+
+
+
+	}
+	else{
+		handleDeath()
+		FileAppend, 0`,0`,0`,0`,`, C:\Users\Damien\Documents\RunLog.txt
+		ToolTip, Handle Death,300,419
+		type := "Death"
+	}
+	counter := counter+1
+	ElapsedTime := (A_TickCount - StartTime)/1000
+	FileAppend, %ElapsedTime% `n, C:\Users\Damien\Documents\RunLog.txt
+	replay(ElapsedTime, type)
+
+}
+
+
+^Esc:: ExitApp ;
